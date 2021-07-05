@@ -1,0 +1,15 @@
+html, body {
+    margin: 0;
+    height: 100%;
+}
+
+
+#line {
+    background: #8c8b8b;
+    height: 1px;
+}
+
+svg, #svgElement {
+    height: 100%;
+    width: 100%;
+}

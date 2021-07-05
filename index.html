@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="app.css">
+    <!-- <script src="app.js" defer></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <span style="padding-left: 10px">svgPanelize |</span>
+        <!-- <input type="range" min="1" max="60" value="20" oninput="moveSlider(this, 'x')"/>
+        <input type="range" min="1" max="40" value="10" oninput="moveSlider(this, 'y')"/> -->
+        <input type="text" placeholder="0.01mm" id="inputUnits">
+    </div>
+    <!-- <div id="line"></div>
+    <div id="svgElement"></div> -->
+    <script>
+        /* TODOS, 
+            - make this a class  
+            - Find mouse coordinated in the grid
+        */
+        // Global Variables 
+        var _gridZoomX = 1000
+        var _gridZoomY = 1000
+        var _svgWidth = 10000
+        var _svgHeight = 10000
+        // Define SVG initial parameters
+        var _draw = SVG().addTo('body').attr('preserveAspectRatio', 'xMinYMin').attr("id", "svgRoot")
+        // Define SVG ViewBox 
+        _draw.viewbox(0, 0, _gridZoomX, _gridZoomY)
+        // Define GRID (automatically added to <defs>)
+        // _draw.pattern(5, 5, function(add) {
+        //     add.path("M5 0V5H-5").fill('none').stroke({color: 'white', width: 0.6, opacity:0.6})
+        // }).attr("id", "gridPattern")
+        var _gridPattern = _draw.pattern(5, 5).attr("id", "gridPattern")
+        var _gridPatternPath = _gridPattern.path("M5 0V5H-5").fill('none').stroke({color: 'white', width: 0.6, opacity:0.6})
+        // Define Background color
+        _draw.rect(_svgWidth, _svgHeight).fill('black').stroke('none').attr("pointer-events", "none")
+        _draw.rect(_svgWidth, _svgHeight).fill('url(#gridPattern)').fill({opacity:0.8}).stroke('none').attr("pointer-events", "none").attr("shape-rendering","crispEdges")
+        //<rect id="grid1" pointer-events="none" x="0" y="0" width="1000" height="1000" fill="url(#gridPattern)" fill-opacity="0.8" stroke="none" shape-rendering="crispEdges"/>
+        //<rect id="gridBg" pointer-events="none" x="0" y="0" width="1000" height="1000" fill="#000000" stroke="none"/>
+        // Panel:
+        _draw.rect(500, 300).fill('none').stroke({ color: 'green', width: 1 }).move(10,10);
+        // Top
+        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(100,100);
+        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(200,100);
+        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(300,100);
+        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(400,100);
+        // Lines top 
+        _draw.polyline('150,110 160,110 160,70 40,70').fill('none').stroke({ color: 'red', width: 2 })
+        _draw.polyline('250,110 260,110 260,60 40,60').fill('none').stroke({ color: 'red', width: 2 })
+        _draw.polyline('350,110 360,110 360,50 40,50').fill('none').stroke({ color: 'red', width: 2 })
+        _draw.polyline('450,110 460,110 460,40 40,40').fill('none').stroke({ color: 'red', width: 2 })
+        // Down
+        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(100,200);
+        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(200,200);
+        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(300,200);
+        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(400,200);
+        // Lines Bottom
+        _draw.polyline('150,210 160,210 160,190 40,190').fill('none').stroke({ color: 'red', width: 2 })
+        _draw.polyline('250,210 260,210 260,180 40,180').fill('none').stroke({ color: 'red', width: 2 })
+        _draw.polyline('350,210 360,210 360,170 40,170').fill('none').stroke({ color: 'red', width: 2 })
+        _draw.polyline('450,210 460,210 460,160 40,160').fill('none').stroke({ color: 'red', width: 2 })
+
+        // Detect mousewheel direction
+        function detectMouseWheelDirection( e ) {
+            var delta = null,
+                direction = false
+            ;
+            if ( !e ) { // if the event is not provided, we get it from the window object
+                e = window.event;
+            }
+            if ( e.wheelDelta ) { // will work in most cases
+                delta = e.wheelDelta / 60;
+            } else if ( e.detail ) { // fallback for Firefox
+                delta = -e.detail / 2;
+            }
+            if ( delta !== null ) {
+                direction = delta > 0 ? 'up' : 'down';
+            }
+
+            return direction;
+        }
+        document.getElementById('svgRoot').onmousewheel = ( e ) => {
+            e.preventDefault()
+            // detect direction logic
+            let mouseDirection = detectMouseWheelDirection(e)
+            if ( mouseDirection == 'down' ) {
+                //console.log("Mouse down")
+                if (_gridZoomX <= 100 ||  _gridZoomY<= 100) return; // Min reached
+                _gridZoomX = _gridZoomX - 100
+                _gridZoomY = _gridZoomY - 100
+                _draw.viewbox(0, 0, _gridZoomX, _gridZoomY)
+            } else if ( mouseDirection == 'up' ) {
+                //console.log("Mouse up")
+                if (_gridZoomX >= _svgWidth-1000 || _gridZoomY >= _svgHeight-1000) return; // Max reached
+                _gridZoomX = _gridZoomX + 100
+                _gridZoomY = _gridZoomY + 100
+                _draw.viewbox(0, 0, _gridZoomX, _gridZoomY)
+            } else {
+                console.error("Mouse direction could not be determined")
+            }
+        };
+
+        // Grid Size units change 
+        document.getElementById('inputUnits').addEventListener('change', (e) => {
+            let inputGridSize = e.target.value;
+            if (isNaN(inputGridSize)) {
+                console.error("Entered value is not a number")
+            } else {
+                if (inputGridSize < 0.005 || inputGridSize > 100000) {
+                    console.error("Grid beyond allowed max/min")
+                } else {
+                    // Transform to svg units 
+                    // 0.005mm => 5
+                    // 0.010mm => 10
+                    const svgGridSize = inputGridSize * 100
+                    console.log(_gridPattern.width(), _gridPattern.height(), _gridPatternPath.attr('d'))
+                    _gridPattern.width(svgGridSize) 
+                    _gridPattern.height(svgGridSize)
+                    _gridPatternPath.attr('d', `M${svgGridSize} 0V${svgGridSize}H-${svgGridSize}`)
+
+                    // Change stroke Width depending on the grid units 
+                    if (inputGridSize < 0.05) {
+                        // Make grid lines slimmer
+                        _gridPatternPath.stroke({width : 0.1})
+                    } else {
+                        _gridPatternPath.stroke({width : 0.6})
+                    }
+
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>
