@@ -7,19 +7,27 @@
     <title>Document</title>
     <link rel="stylesheet" type="text/css" href="app.css">
     <!-- <script src="app.js" defer></script> -->
-    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script> -->
 </head>
 <body>
     <div id="app">
-        <span style="padding-left: 10px">svgPanelize |</span>
+        <span style="padding-left: 10px">svgGerberPanelize |</span>
         <!-- <input type="range" min="1" max="60" value="20" oninput="moveSlider(this, 'x')"/>
         <input type="range" min="1" max="40" value="10" oninput="moveSlider(this, 'y')"/> -->
         <input type="text" placeholder="0.01mm" id="inputUnits">
+        <input type="file" id="inputPCBzip">
+        <input type="text" value="0.5" id="inputPCBx">
+        <input type="text" value="0.5" id="inputPCBy">
+        <button id="addPCB">Add PCB</button>
+        <button id="routePCB">Route PCB</button>
+
     </div>
-    <!-- <div id="line"></div>
-    <div id="svgElement"></div> -->
-    <script>
-        /* TODOS, 
+    <script type="module" dref>
+        /* svg-gerver-viewer */
+        import { SVG } from '@svgdotjs/svg.js'
+        import JSZip from "jszip";
+
+        /* TODOS,
             - make this a class  
             - Find mouse coordinated in the grid
         */
@@ -45,26 +53,57 @@
         //<rect id="gridBg" pointer-events="none" x="0" y="0" width="1000" height="1000" fill="#000000" stroke="none"/>
         // Panel:
         _draw.rect(500, 300).fill('none').stroke({ color: 'green', width: 1 }).move(10,10);
-        // Top
-        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(100,100);
-        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(200,100);
-        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(300,100);
-        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(400,100);
-        // Lines top 
-        _draw.polyline('150,110 160,110 160,70 40,70').fill('none').stroke({ color: 'red', width: 2 })
-        _draw.polyline('250,110 260,110 260,60 40,60').fill('none').stroke({ color: 'red', width: 2 })
-        _draw.polyline('350,110 360,110 360,50 40,50').fill('none').stroke({ color: 'red', width: 2 })
-        _draw.polyline('450,110 460,110 460,40 40,40').fill('none').stroke({ color: 'red', width: 2 })
-        // Down
-        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(100,200);
-        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(200,200);
-        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(300,200);
-        _draw.rect(50, 50).fill('none').stroke({ color: 'green', width: 1 }).move(400,200);
-        // Lines Bottom
-        _draw.polyline('150,210 160,210 160,190 40,190').fill('none').stroke({ color: 'red', width: 2 })
-        _draw.polyline('250,210 260,210 260,180 40,180').fill('none').stroke({ color: 'red', width: 2 })
-        _draw.polyline('350,210 360,210 360,170 40,170').fill('none').stroke({ color: 'red', width: 2 })
-        _draw.polyline('450,210 460,210 460,160 40,160').fill('none').stroke({ color: 'red', width: 2 })
+
+
+        document.getElementById('inputPCBzip').addEventListener('change', (ele) => {
+            var file = ele.target.files[0];
+            if (file.type.match('application/x-zip-compressed')) {
+                JSZip.loadAsync(file).then(function (zip) {
+                    // Read file content
+                    for (let filename in zip.files) {
+                        console.log(filename);
+                        zip.file(filename).async("string").then(function (fileData) {
+                            //console.log(fileData)    
+                        })
+                    }
+                })                  
+            } else {
+                console.log("It doesn't seem to be a zip file!")
+            }
+        });
+
+
+        document.getElementById('addPCB').addEventListener('click', () => {
+            let pcbInputWidth = document.getElementById('inputPCBx').value * 100;
+            let pcbInputHeight = document.getElementById('inputPCBy').value * 100;
+
+            // Top
+            _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(100,100);
+            _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(200,100);
+            _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(300,100);
+            _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(400,100);
+
+            // Down
+            _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(100,200);
+            _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(200,200);
+            _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(300,200);
+            _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(400,200);
+
+        });
+
+        document.getElementById('routePCB').addEventListener('click', () => {
+            // Lines top 
+            _draw.polyline('150,110 160,110 160,70 40,70').fill('none').stroke({ color: 'red', width: 2 })
+            _draw.polyline('250,110 260,110 260,60 40,60').fill('none').stroke({ color: 'red', width: 2 })
+            _draw.polyline('350,110 360,110 360,50 40,50').fill('none').stroke({ color: 'red', width: 2 })
+            _draw.polyline('450,110 460,110 460,40 40,40').fill('none').stroke({ color: 'red', width: 2 })
+
+            // Lines Bottom
+            _draw.polyline('150,210 160,210 160,190 40,190').fill('none').stroke({ color: 'red', width: 2 })
+            _draw.polyline('250,210 260,210 260,180 40,180').fill('none').stroke({ color: 'red', width: 2 })
+            _draw.polyline('350,210 360,210 360,170 40,170').fill('none').stroke({ color: 'red', width: 2 })
+            _draw.polyline('450,210 460,210 460,160 40,160').fill('none').stroke({ color: 'red', width: 2 })
+        });
 
         // Detect mousewheel direction
         function detectMouseWheelDirection( e ) {

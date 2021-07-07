@@ -4,11 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "lite-server"
+    "start": "lite-server",
+    "dev": "snowpack dev"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "lite-server": "^2.6.1"
+    "lite-server": "^2.6.1",
+    "snowpack": "^3.7.1"
+  },
+  "dependencies": {
+    "@svgdotjs/svg.js": "^3.1.1",
+    "jszip": "^3.6.0"
   }
 }
