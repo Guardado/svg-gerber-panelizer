@@ -8,6 +8,7 @@
     <link rel="stylesheet" type="text/css" href="app.css">
     <!-- <script src="app.js" defer></script> -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script> -->
+    <script src="https://unpkg.com/gerber-to-svg@^4.0.0/dist/gerber-to-svg.min.js"></script>
 </head>
 <body>
     <div id="app">
@@ -20,17 +21,42 @@
         <input type="text" value="0.5" id="inputPCBy">
         <button id="addPCB">Add PCB</button>
         <button id="routePCB">Route PCB</button>
+        <div id="testSVG"></div>
 
     </div>
     <script type="module" dref>
         /* svg-gerver-viewer */
         import { SVG } from '@svgdotjs/svg.js'
         import JSZip from "jszip";
+        //import gerberToSvg from 'gerber-to-svg';
+        import {svgTestElement, svgTestElement2, svgTestElement3, svgTestElement4} from './svgTest.js'
+
+
+        /*
+            // Test Flatten
+            // Note: flattenSVG doesn't understand <use>
+            import {flattenSVG} from 'flatten-svg';
+            import {svgTestElement, svgTestElement2, svgTestElement3, svgTestElement4} from './svgTest.js'
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(svgTestElement4, "image/svg+xml");
+            console.log(doc.documentElement)
+            console.log(flattenSVG(doc.documentElement));
+        */
+
+        /*
+
+            // Test Print SVG from string
+            var testDraw = SVG(svgTestElement)
+            console.log(testDraw.svg());
+
+        */
 
         /* TODOS,
-            - make this a class  
-            - Find mouse coordinated in the grid
+            - Make this a class  
+            - Display mouse coordinates
         */
+
+
         // Global Variables 
         var _gridZoomX = 1000
         var _gridZoomY = 1000
@@ -41,30 +67,42 @@
         // Define SVG ViewBox 
         _draw.viewbox(0, 0, _gridZoomX, _gridZoomY)
         // Define GRID (automatically added to <defs>)
-        // _draw.pattern(5, 5, function(add) {
-        //     add.path("M5 0V5H-5").fill('none').stroke({color: 'white', width: 0.6, opacity:0.6})
-        // }).attr("id", "gridPattern")
         var _gridPattern = _draw.pattern(5, 5).attr("id", "gridPattern")
         var _gridPatternPath = _gridPattern.path("M5 0V5H-5").fill('none').stroke({color: 'white', width: 0.6, opacity:0.6})
         // Define Background color
         _draw.rect(_svgWidth, _svgHeight).fill('black').stroke('none').attr("pointer-events", "none")
         _draw.rect(_svgWidth, _svgHeight).fill('url(#gridPattern)').fill({opacity:0.8}).stroke('none').attr("pointer-events", "none").attr("shape-rendering","crispEdges")
-        //<rect id="grid1" pointer-events="none" x="0" y="0" width="1000" height="1000" fill="url(#gridPattern)" fill-opacity="0.8" stroke="none" shape-rendering="crispEdges"/>
-        //<rect id="gridBg" pointer-events="none" x="0" y="0" width="1000" height="1000" fill="#000000" stroke="none"/>
         // Panel:
-        _draw.rect(500, 300).fill('none').stroke({ color: 'green', width: 1 }).move(10,10);
+        //_draw.rect(500, 300).fill('none').stroke({ color: 'green', width: 1 }).move(10,10);
+
+        // Layer groups
+        var topCopperLayer = _draw.group().attr("id", "topCopperLayer")
+        var bottomCopperLayer = _draw.group().attr("id", "bottomCopperLayer")
 
 
+        // Import Ziped Gerber Files
         document.getElementById('inputPCBzip').addEventListener('change', (ele) => {
             var file = ele.target.files[0];
             if (file.type.match('application/x-zip-compressed')) {
                 JSZip.loadAsync(file).then(function (zip) {
                     // Read file content
-                    for (let filename in zip.files) {
-                        console.log(filename);
-                        zip.file(filename).async("string").then(function (fileData) {
-                            //console.log(fileData)    
-                        })
+                    for (const filename in zip.files) {
+                        const fileExtension = filename.substring(filename.lastIndexOf('.') + 1)
+                        if (fileExtension.toLocaleLowerCase() == "gtl") {
+                            console.log(filename)
+                            zip.file(filename).async("string").then(function (gerberData) {
+                                console.log(gerberData)
+                                addGerberFileSVGToView(gerberData, fileExtension.toLocaleLowerCase())   
+                            })
+                        }
+                        if (fileExtension.toLocaleLowerCase() == "gbl") {
+                            console.log(filename)
+                            zip.file(filename).async("string").then(function (gerberData) {
+                                console.log(gerberData)
+                                addGerberFileSVGToView(gerberData, fileExtension.toLocaleLowerCase())
+                            })
+                        }
+
                     }
                 })                  
             } else {
@@ -72,18 +110,40 @@
             }
         });
 
+        // Add Gerber Files to SVG View 
+        function addGerberFileSVGToView(gerberData, layer) {
+            gerberToSvg(gerberData, 'gerber-layer', function(error, gerberSVG) {
+                if (error) {
+                    return console.error('gerber to svg error - ' + error.message)
+                }
+                //console.log(SVG(svgTestElement2).svg());
+                switch(layer) {
+                    case "gtl":
+                        topCopperLayer.svg(gerberSVG)
+                        break;
+                    case "gbl":
+                        bottomCopperLayer.svg(gerberSVG)
+                        break;
+                    default:
+                        console.error("Unknonw layer")
+                        break;
+                }
+            })
+        }
 
+
+        // Add a PCB and make copies of it
         document.getElementById('addPCB').addEventListener('click', () => {
             let pcbInputWidth = document.getElementById('inputPCBx').value * 100;
             let pcbInputHeight = document.getElementById('inputPCBy').value * 100;
 
-            // Top
+            // Top PCBs
             _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(100,100);
             _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(200,100);
             _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(300,100);
             _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(400,100);
 
-            // Down
+            // Bottom PCBs
             _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(100,200);
             _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(200,200);
             _draw.rect(pcbInputWidth, pcbInputHeight).fill('none').stroke({ color: 'green', width: 1 }).move(300,200);
@@ -91,14 +151,15 @@
 
         });
 
+        // Deterministic PCB routing
         document.getElementById('routePCB').addEventListener('click', () => {
-            // Lines top 
+            // Top Signals
             _draw.polyline('150,110 160,110 160,70 40,70').fill('none').stroke({ color: 'red', width: 2 })
             _draw.polyline('250,110 260,110 260,60 40,60').fill('none').stroke({ color: 'red', width: 2 })
             _draw.polyline('350,110 360,110 360,50 40,50').fill('none').stroke({ color: 'red', width: 2 })
             _draw.polyline('450,110 460,110 460,40 40,40').fill('none').stroke({ color: 'red', width: 2 })
 
-            // Lines Bottom
+            // Bottom Signals
             _draw.polyline('150,210 160,210 160,190 40,190').fill('none').stroke({ color: 'red', width: 2 })
             _draw.polyline('250,210 260,210 260,180 40,180').fill('none').stroke({ color: 'red', width: 2 })
             _draw.polyline('350,210 360,210 360,170 40,170').fill('none').stroke({ color: 'red', width: 2 })
@@ -124,6 +185,8 @@
 
             return direction;
         }
+
+        // Detect mousewheel event
         document.getElementById('svgRoot').onmousewheel = ( e ) => {
             e.preventDefault()
             // detect direction logic
@@ -145,7 +208,7 @@
             }
         };
 
-        // Grid Size units change 
+        // Change girid size accoriding to user input in mm (e.g, 0.01mm, 0.5mm)
         document.getElementById('inputUnits').addEventListener('change', (e) => {
             let inputGridSize = e.target.value;
             if (isNaN(inputGridSize)) {

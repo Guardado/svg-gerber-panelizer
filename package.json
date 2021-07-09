@@ -11,10 +11,14 @@
   "license": "MIT",
   "devDependencies": {
     "lite-server": "^2.6.1",
+    "rollup-plugin-node-polyfills": "^0.2.1",
     "snowpack": "^3.7.1"
   },
   "dependencies": {
     "@svgdotjs/svg.js": "^3.1.1",
-    "jszip": "^3.6.0"
+    "flatten-svg": "^0.3.0",
+    "gerber-to-svg": "^4.2.5",
+    "jszip": "^3.6.0",
+    "pcb-stackup": "^4.2.5"
   }
 }

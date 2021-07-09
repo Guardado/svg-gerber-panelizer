@@ -11,11 +11,14 @@ module.exports = {
   ],
   packageOptions: {
     namedExports: ['@svgdotjs/svg.js'],
+    rollup: {
+      plugins: [require('rollup-plugin-node-polyfills')()],
+    },
   },
   devOptions: {
     /* ... */
   },
   buildOptions: {
     /* ... */
-  },
+  }
 };

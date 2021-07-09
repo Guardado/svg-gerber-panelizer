@@ -13,3 +13,12 @@ svg, #svgElement {
     height: 100%;
     width: 100%;
 }
+
+/* Top Copper Color */
+#topCopperLayer {
+    color: red;
+}
+
+#bottomCopperLayer {
+    color: blue;
+}
